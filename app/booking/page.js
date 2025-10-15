@@ -188,7 +188,8 @@ function BookingFormContent() {
             {/* Context - Required */}
             <div>
               <label className="block text-sm font-semibold text-indigo-950 mb-2">
-                What's on your mind? <span className="text-orange-600">*</span>
+                What&apos;s on your mind?{" "}
+                <span className="text-orange-600">*</span>
               </label>
               <textarea
                 value={formData.context}
@@ -199,7 +200,7 @@ function BookingFormContent() {
               />
               <div className="flex justify-between items-center mt-2">
                 <p className="text-xs text-stone-500">
-                  Be as specific or general as you'd like
+                  Be as specific or general as you&apos;d like
                 </p>
                 <span
                   className={`text-sm font-medium ${
@@ -323,8 +324,9 @@ function BookingFormContent() {
                   Your information is private
                 </p>
                 <p className="text-indigo-700">
-                  I'll use these details only to channel your energy and provide
-                  your reading. Nothing is shared or stored beyond your session.
+                  I&apos;ll use these details only to channel your energy and
+                  provide your reading. Nothing is shared or stored beyond your
+                  session.
                 </p>
               </div>
             </div>
