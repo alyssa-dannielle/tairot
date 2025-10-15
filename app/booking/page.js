@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, Suspense } from "react";
 import { Sparkles, Upload, AlertCircle, Calendar, MapPin } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function TairotBookingForm() {
+function BookingFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const spreadId = searchParams.get("spread");
@@ -118,7 +118,6 @@ export default function TairotBookingForm() {
   const handleSubmit = () => {
     if (isFormValid()) {
       console.log("Form submitted:", formData);
-      // TODO: Connect to Stripe payment
       alert(
         "Payment integration coming next! For now, this would go to Stripe checkout."
       );
@@ -189,8 +188,7 @@ export default function TairotBookingForm() {
             {/* Context - Required */}
             <div>
               <label className="block text-sm font-semibold text-indigo-950 mb-2">
-                What&apos;s on your mind?{" "}
-                <span className="text-orange-600">*</span>
+                What's on your mind? <span className="text-orange-600">*</span>
               </label>
               <textarea
                 value={formData.context}
@@ -201,7 +199,7 @@ export default function TairotBookingForm() {
               />
               <div className="flex justify-between items-center mt-2">
                 <p className="text-xs text-stone-500">
-                  Be as specific or general as you&apos;d like
+                  Be as specific or general as you'd like
                 </p>
                 <span
                   className={`text-sm font-medium ${
@@ -325,9 +323,8 @@ export default function TairotBookingForm() {
                   Your information is private
                 </p>
                 <p className="text-indigo-700">
-                  I&apos;ll use these details only to channel your energy and
-                  provide your reading. Nothing is shared or stored beyond your
-                  session.
+                  I'll use these details only to channel your energy and provide
+                  your reading. Nothing is shared or stored beyond your session.
                 </p>
               </div>
             </div>
@@ -360,5 +357,19 @@ export default function TairotBookingForm() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TairotBookingForm() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center">
+          <p className="text-indigo-950 text-xl">Loading...</p>
+        </div>
+      }
+    >
+      <BookingFormContent />
+    </Suspense>
   );
 }
