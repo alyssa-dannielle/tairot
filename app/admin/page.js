@@ -317,7 +317,9 @@ export default function TairotAdminDashboard() {
                 </h3>
               </div>
               <p className="text-3xl font-bold text-indigo-950">0</p>
-              <p className="text-sm text-stone-500 mt-1">You're doing great!</p>
+              <p className="text-sm text-stone-500 mt-1">
+                You&apos;re doing great!
+              </p>
             </div>
 
             <div className="bg-white rounded-xl p-6 shadow-md">
