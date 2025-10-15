@@ -206,7 +206,7 @@ export default function TairotLanding() {
               onClick={handleContinue}
               className="px-12 py-5 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl font-bold text-xl hover:from-orange-700 hover:to-amber-700 transition shadow-xl hover:shadow-2xl"
             >
-              Continue to Payment
+              Continue to Booking
             </button>
           </div>
         )}
