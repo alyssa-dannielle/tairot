@@ -30,7 +30,8 @@ export default function TairotAdminDashboard() {
       birthday: "1992-09-15",
       sunSign: "Virgo",
       location: "Portland, OR",
-      photo: null,
+      photo:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
       timestamp: "2 hours ago",
       status: "pending",
     },
@@ -346,52 +347,70 @@ export default function TairotAdminDashboard() {
                   className="p-6 hover:bg-amber-50 transition"
                 >
                   <div className="flex items-start justify-between gap-6">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-xl font-bold text-indigo-950">
-                          {reading.name}
-                        </h3>
-                        <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold">
-                          {reading.timestamp}
-                        </span>
-                      </div>
+                    <div className="flex gap-6 flex-1">
+                      {/* Photo - if it exists */}
+                      {reading.photo && (
+                        <div className="flex-shrink-0">
+                          <img
+                            src={reading.photo}
+                            alt={reading.name}
+                            className="w-24 h-24 rounded-lg object-cover border-2 border-amber-300 shadow-md"
+                          />
+                        </div>
+                      )}
 
-                      <div className="grid md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <p className="text-sm font-semibold text-stone-600 mb-1">
-                            Spread
-                          </p>
-                          <p className="text-stone-800">{reading.spread}</p>
+                      {/* Main content */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <h3 className="text-xl font-bold text-indigo-950">
+                            {reading.name}
+                          </h3>
+                          <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold">
+                            {reading.timestamp}
+                          </span>
                         </div>
 
-                        {reading.sunSign && (
+                        <div className="grid md:grid-cols-2 gap-4 mb-4">
                           <div>
-                            <p className="text-sm font-semibold text-stone-600 mb-1 flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              Sun Sign
+                            <p className="text-sm font-semibold text-stone-600 mb-1">
+                              Spread
                             </p>
-                            <p className="text-stone-800">{reading.sunSign}</p>
+                            <p className="text-stone-800">{reading.spread}</p>
                           </div>
-                        )}
 
-                        {reading.location && (
-                          <div>
-                            <p className="text-sm font-semibold text-stone-600 mb-1 flex items-center gap-1">
-                              <MapPin className="w-4 h-4" />
-                              Location
-                            </p>
-                            <p className="text-stone-800">{reading.location}</p>
-                          </div>
-                        )}
-                      </div>
+                          {reading.sunSign && (
+                            <div>
+                              <p className="text-sm font-semibold text-stone-600 mb-1 flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                Sun Sign
+                              </p>
+                              <p className="text-stone-800">
+                                {reading.sunSign}
+                              </p>
+                            </div>
+                          )}
 
-                      <div className="bg-stone-50 rounded-lg p-4 border-2 border-stone-100">
-                        <p className="text-sm font-semibold text-stone-600 mb-2">
-                          Context
-                        </p>
-                        <p className="text-stone-700 leading-relaxed">
-                          {reading.context}
-                        </p>
+                          {reading.location && (
+                            <div>
+                              <p className="text-sm font-semibold text-stone-600 mb-1 flex items-center gap-1">
+                                <MapPin className="w-4 h-4" />
+                                Location
+                              </p>
+                              <p className="text-stone-800">
+                                {reading.location}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="bg-stone-50 rounded-lg p-4 border-2 border-stone-100">
+                          <p className="text-sm font-semibold text-stone-600 mb-2">
+                            Context
+                          </p>
+                          <p className="text-stone-700 leading-relaxed">
+                            {reading.context}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
