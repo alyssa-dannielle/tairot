@@ -3,6 +3,7 @@
 import React, { useState, Suspense } from "react";
 import { Sparkles, Upload, AlertCircle, Calendar, MapPin } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 function BookingFormContent() {
   const router = useRouter();
@@ -115,12 +116,50 @@ function BookingFormContent() {
     );
   };
 
-  const handleSubmit = () => {
-    if (isFormValid()) {
-      console.log("Form submitted:", formData);
-      alert(
-        "Payment integration coming next! For now, this would go to Stripe checkout."
-      );
+  const handleSubmit = async () => {
+    if (!isFormValid()) return;
+
+    try {
+      // Prepare the data
+      const readingData = {
+        name: formData.name,
+        context: formData.context,
+        birthday: formData.birthday || null,
+        sun_sign: sunSign || null,
+        location: formData.location || null,
+        photo_url: photoPreview || null, // We'll handle real uploads later
+        spread_id: spreadId,
+        spread_name: selectedSpread.name,
+        status: "pending",
+      };
+
+      // Insert into database
+      const { data, error } = await supabase
+        .from("readings")
+        .insert([readingData])
+        .select();
+
+      if (error) {
+        console.error("Error saving reading:", error);
+        alert("Oops! Something went wrong. Please try again.");
+        return;
+      }
+
+      console.log("Reading saved!", data);
+
+      // Success! Show confirmation
+      alert(`✨ Reading request submitted! 
+      
+Your reading will be ready within 24 hours. 
+
+(Payment integration coming next! For now, this is saved to the database.)`);
+
+      // TODO: Redirect to payment page once Stripe is set up
+      // For now, redirect back home
+      router.push("/?submitted=true");
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      alert("Something went wrong. Please try again!");
     }
   };
 

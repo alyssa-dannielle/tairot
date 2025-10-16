@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   Clock,
@@ -10,62 +10,81 @@ import {
   Search,
   ChevronRight,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function TairotAdminDashboard() {
-  const [view, setView] = useState("pending"); // 'pending' or 'card-selection'
+  const [view, setView] = useState("pending");
   const [selectedReading, setSelectedReading] = useState(null);
   const [selectedCards, setSelectedCards] = useState([null, null, null]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [pendingReadings, setPendingReadings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock pending readings data (will come from Supabase later)
-  const pendingReadings = [
-    {
-      id: 1,
-      name: "Sarah",
-      spread: "Past • Present • Future",
-      spreadId: "past-present-future",
-      positions: ["Past", "Present", "Future"],
-      context:
-        "Feeling uncertain about a career change and wondering if I should take the leap or stay where I am.",
-      birthday: "1992-09-15",
-      sunSign: "Virgo",
-      location: "Portland, OR",
-      photo:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
-      timestamp: "2 hours ago",
-      status: "pending",
-    },
-    {
-      id: 2,
-      name: "Alex",
-      spread: "Mind • Body • Spirit",
-      spreadId: "mind-body-spirit",
-      positions: ["Mind", "Body", "Spirit"],
-      context:
-        "Working on self-growth and want to understand where I need to focus my energy.",
-      birthday: "1988-03-22",
-      sunSign: "Aries",
-      location: "Austin, TX",
-      photo: null,
-      timestamp: "5 hours ago",
-      status: "pending",
-    },
-    {
-      id: 3,
-      name: "Jordan",
-      spread: "Situation • Action • Outcome",
-      spreadId: "situation-action-outcome",
-      positions: ["Situation", "Action", "Outcome"],
-      context:
-        "Dealing with a complicated relationship situation and need guidance on how to move forward.",
-      birthday: null,
-      sunSign: null,
-      location: "Brooklyn, NY",
-      photo: null,
-      timestamp: "8 hours ago",
-      status: "pending",
-    },
-  ];
+  // Fetch real readings from database
+  useEffect(() => {
+    fetchPendingReadings();
+  }, []);
+
+  const fetchPendingReadings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("readings")
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Format the data to match our component structure
+      const formattedReadings = data.map((reading) => ({
+        id: reading.id,
+        name: reading.name,
+        spread: reading.spread_name,
+        spreadId: reading.spread_id,
+        positions: getSpreadPositions(reading.spread_id),
+        context: reading.context,
+        birthday: reading.birthday,
+        sunSign: reading.sun_sign,
+        location: reading.location,
+        photo: reading.photo_url,
+        timestamp: formatTimestamp(reading.created_at),
+        status: reading.status,
+      }));
+
+      setPendingReadings(formattedReadings);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching readings:", error);
+      setLoading(false);
+    }
+  };
+
+  // Helper function to get spread positions
+  const getSpreadPositions = (spreadId) => {
+    const spreads = {
+      "past-present-future": ["Past", "Present", "Future"],
+      "situation-action-outcome": ["Situation", "Action", "Outcome"],
+      "mind-body-spirit": ["Mind", "Body", "Spirit"],
+    };
+    return spreads[spreadId] || ["Position 1", "Position 2", "Position 3"];
+  };
+
+  // Helper function to format timestamp
+  const formatTimestamp = (timestamp) => {
+    const now = new Date();
+    const created = new Date(timestamp);
+    const diffMs = now - created;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${diffDays} days ago`;
+  };
+
+  // Mock pending readings data - DELETE THIS ENTIRE SECTION
+  // (Remove the entire const pendingReadings = [...] array)
 
   // Simplified tarot deck (Major Arcana + few Minor for demo)
   const tarotDeck = [
@@ -246,15 +265,42 @@ export default function TairotAdminDashboard() {
     setView("card-selection");
   };
 
-  const handleGenerateReading = () => {
+  const handleGenerateReading = async () => {
     console.log("Generating reading for:", selectedReading);
     console.log("Selected cards:", selectedCards);
-    // Will connect to AI API
-    alert(
-      "Reading generated! (In production, this will call the AI API and notify the user)"
-    );
-    setView("pending");
-    setSelectedReading(null);
+
+    try {
+      // Save the selected cards to the reading
+      const { data, error } = await supabase
+        .from("readings")
+        .update({
+          selected_cards: selectedCards.map((card) => ({
+            id: card.id,
+            name: card.name,
+            suit: card.suit,
+            arcana: card.arcana,
+          })),
+          status: "in_progress",
+        })
+        .eq("id", selectedReading.id)
+        .select();
+
+      if (error) throw error;
+
+      console.log("Cards saved!", data);
+      alert("Cards saved! 🎴\n\n(AI interpretation coming next!)");
+
+      // Refresh the readings list
+      await fetchPendingReadings();
+
+      // Go back to pending view
+      setView("pending");
+      setSelectedReading(null);
+      setSelectedCards([null, null, null]);
+    } catch (error) {
+      console.error("Error saving cards:", error);
+      alert("Oops! Error saving cards. Please try again.");
+    }
   };
 
   const allCardsSelected = selectedCards.every((card) => card !== null);
@@ -295,139 +341,160 @@ export default function TairotAdminDashboard() {
       {view === "pending" && (
         <div className="max-w-7xl mx-auto px-4 py-12">
           {/* Stats */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-xl p-6 shadow-md">
-              <div className="flex items-center gap-3 mb-2">
-                <Clock className="w-5 h-5 text-orange-600" />
-                <h3 className="font-semibold text-stone-700">Pending</h3>
+          {loading ? (
+            <div className="text-center py-20">
+              <p className="text-indigo-950 text-xl">Loading readings...</p>
+            </div>
+          ) : pendingReadings.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-indigo-950 text-xl mb-2">
+                No pending readings yet!
+              </p>
+              <p className="text-stone-600">
+                New reading requests will appear here.
+              </p>
+            </div>
+          ) : null}
+
+          {!loading && pendingReadings.length > 0 && (
+            <>
+              <div className="grid md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Clock className="w-5 h-5 text-orange-600" />
+                    <h3 className="font-semibold text-stone-700">Pending</h3>
+                  </div>
+                  <p className="text-3xl font-bold text-indigo-950">
+                    {pendingReadings.length}
+                  </p>
+                  <p className="text-sm text-stone-500 mt-1">
+                    Waiting for your pull
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Sparkles className="w-5 h-5 text-amber-600" />
+                    <h3 className="font-semibold text-stone-700">
+                      Completed Today
+                    </h3>
+                  </div>
+                  <p className="text-3xl font-bold text-indigo-950">0</p>
+                  <p className="text-sm text-stone-500 mt-1">
+                    You&apos;re doing great!
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="flex items-center gap-3 mb-2">
+                    <User className="w-5 h-5 text-emerald-600" />
+                    <h3 className="font-semibold text-stone-700">Slots Left</h3>
+                  </div>
+                  <p className="text-3xl font-bold text-indigo-950">
+                    {3 - pendingReadings.length}
+                  </p>
+                  <p className="text-sm text-stone-500 mt-1">Available today</p>
+                </div>
               </div>
-              <p className="text-3xl font-bold text-indigo-950">
-                {pendingReadings.length}
-              </p>
-              <p className="text-sm text-stone-500 mt-1">
-                Waiting for your pull
-              </p>
-            </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md">
-              <div className="flex items-center gap-3 mb-2">
-                <Sparkles className="w-5 h-5 text-amber-600" />
-                <h3 className="font-semibold text-stone-700">
-                  Completed Today
-                </h3>
-              </div>
-              <p className="text-3xl font-bold text-indigo-950">0</p>
-              <p className="text-sm text-stone-500 mt-1">
-                You&apos;re doing great!
-              </p>
-            </div>
+              {/* Pending Readings */}
+              <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                <div className="p-6 border-b-2 border-stone-100">
+                  <h2 className="text-2xl font-bold text-indigo-950">
+                    Pending Readings
+                  </h2>
+                </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md">
-              <div className="flex items-center gap-3 mb-2">
-                <User className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-semibold text-stone-700">Slots Left</h3>
-              </div>
-              <p className="text-3xl font-bold text-indigo-950">
-                {3 - pendingReadings.length}
-              </p>
-              <p className="text-sm text-stone-500 mt-1">Available today</p>
-            </div>
-          </div>
+                <div className="divide-y divide-stone-100">
+                  {pendingReadings.map((reading) => (
+                    <div
+                      key={reading.id}
+                      className="p-6 hover:bg-amber-50 transition"
+                    >
+                      <div className="flex items-start justify-between gap-6">
+                        <div className="flex gap-6 flex-1">
+                          {/* Photo - if it exists */}
+                          {reading.photo && (
+                            <div className="flex-shrink-0">
+                              <img
+                                src={reading.photo}
+                                alt={reading.name}
+                                className="w-24 h-24 rounded-lg object-cover border-2 border-amber-300 shadow-md"
+                              />
+                            </div>
+                          )}
 
-          {/* Pending Readings */}
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <div className="p-6 border-b-2 border-stone-100">
-              <h2 className="text-2xl font-bold text-indigo-950">
-                Pending Readings
-              </h2>
-            </div>
+                          {/* Main content */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3">
+                              <h3 className="text-xl font-bold text-indigo-950">
+                                {reading.name}
+                              </h3>
+                              <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold">
+                                {reading.timestamp}
+                              </span>
+                            </div>
 
-            <div className="divide-y divide-stone-100">
-              {pendingReadings.map((reading) => (
-                <div
-                  key={reading.id}
-                  className="p-6 hover:bg-amber-50 transition"
-                >
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="flex gap-6 flex-1">
-                      {/* Photo - if it exists */}
-                      {reading.photo && (
-                        <div className="flex-shrink-0">
-                          <img
-                            src={reading.photo}
-                            alt={reading.name}
-                            className="w-24 h-24 rounded-lg object-cover border-2 border-amber-300 shadow-md"
-                          />
-                        </div>
-                      )}
+                            <div className="grid md:grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <p className="text-sm font-semibold text-stone-600 mb-1">
+                                  Spread
+                                </p>
+                                <p className="text-stone-800">
+                                  {reading.spread}
+                                </p>
+                              </div>
 
-                      {/* Main content */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-xl font-bold text-indigo-950">
-                            {reading.name}
-                          </h3>
-                          <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold">
-                            {reading.timestamp}
-                          </span>
-                        </div>
+                              {reading.sunSign && (
+                                <div>
+                                  <p className="text-sm font-semibold text-stone-600 mb-1 flex items-center gap-1">
+                                    <Calendar className="w-4 h-4" />
+                                    Sun Sign
+                                  </p>
+                                  <p className="text-stone-800">
+                                    {reading.sunSign}
+                                  </p>
+                                </div>
+                              )}
 
-                        <div className="grid md:grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <p className="text-sm font-semibold text-stone-600 mb-1">
-                              Spread
-                            </p>
-                            <p className="text-stone-800">{reading.spread}</p>
+                              {reading.location && (
+                                <div>
+                                  <p className="text-sm font-semibold text-stone-600 mb-1 flex items-center gap-1">
+                                    <MapPin className="w-4 h-4" />
+                                    Location
+                                  </p>
+                                  <p className="text-stone-800">
+                                    {reading.location}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="bg-stone-50 rounded-lg p-4 border-2 border-stone-100">
+                              <p className="text-sm font-semibold text-stone-600 mb-2">
+                                Context
+                              </p>
+                              <p className="text-stone-700 leading-relaxed">
+                                {reading.context}
+                              </p>
+                            </div>
                           </div>
-
-                          {reading.sunSign && (
-                            <div>
-                              <p className="text-sm font-semibold text-stone-600 mb-1 flex items-center gap-1">
-                                <Calendar className="w-4 h-4" />
-                                Sun Sign
-                              </p>
-                              <p className="text-stone-800">
-                                {reading.sunSign}
-                              </p>
-                            </div>
-                          )}
-
-                          {reading.location && (
-                            <div>
-                              <p className="text-sm font-semibold text-stone-600 mb-1 flex items-center gap-1">
-                                <MapPin className="w-4 h-4" />
-                                Location
-                              </p>
-                              <p className="text-stone-800">
-                                {reading.location}
-                              </p>
-                            </div>
-                          )}
                         </div>
 
-                        <div className="bg-stone-50 rounded-lg p-4 border-2 border-stone-100">
-                          <p className="text-sm font-semibold text-stone-600 mb-2">
-                            Context
-                          </p>
-                          <p className="text-stone-700 leading-relaxed">
-                            {reading.context}
-                          </p>
-                        </div>
+                        <button
+                          onClick={() => handleStartReading(reading)}
+                          className="px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-lg font-semibold hover:from-orange-700 hover:to-amber-700 transition shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap"
+                        >
+                          Start Reading
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
                       </div>
                     </div>
-
-                    <button
-                      onClick={() => handleStartReading(reading)}
-                      className="px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-lg font-semibold hover:from-orange-700 hover:to-amber-700 transition shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap"
-                    >
-                      Start Reading
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
