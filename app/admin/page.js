@@ -270,8 +270,8 @@ export default function TairotAdminDashboard() {
     console.log("Selected cards:", selectedCards);
 
     try {
-      // Save the selected cards to the reading
-      const { data, error } = await supabase
+      // First, save the selected cards
+      const { data: saveData, error: saveError } = await supabase
         .from("readings")
         .update({
           selected_cards: selectedCards.map((card) => ({
@@ -285,10 +285,37 @@ export default function TairotAdminDashboard() {
         .eq("id", selectedReading.id)
         .select();
 
-      if (error) throw error;
+      if (saveError) throw saveError;
 
-      console.log("Cards saved!", data);
-      alert("Cards saved! 🎴\n\n(AI interpretation coming next!)");
+      console.log("Cards saved!", saveData);
+
+      // Show loading message
+      alert(
+        "🔮 Generating your AI reading...\n\nThis takes about 10-20 seconds. Please wait!"
+      );
+
+      // Call the AI API
+      const response = await fetch("/api/generate-reading", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          readingId: selectedReading.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to generate reading");
+      }
+
+      console.log("AI reading generated!", result);
+
+      alert(
+        "✨ Reading complete! 🎉\n\nThe AI has generated the interpretation!\n\n(Check the console or database to see it)"
+      );
 
       // Refresh the readings list
       await fetchPendingReadings();
@@ -298,8 +325,8 @@ export default function TairotAdminDashboard() {
       setSelectedReading(null);
       setSelectedCards([null, null, null]);
     } catch (error) {
-      console.error("Error saving cards:", error);
-      alert("Oops! Error saving cards. Please try again.");
+      console.error("Error generating reading:", error);
+      alert(`Oops! Error: ${error.message}\n\nPlease try again.`);
     }
   };
 
