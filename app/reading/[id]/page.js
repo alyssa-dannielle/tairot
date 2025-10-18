@@ -87,7 +87,7 @@ export default function ReadingDisplay() {
               Your Reading is Being Prepared
             </h2>
             <p className="text-lg text-stone-600 mb-6">
-              Your cards are being pulled and interpreted with care. You'll
+              Your cards are being pulled and interpreted with care. You&apos;ll
               receive an email when your reading is ready (within 24 hours).
             </p>
             <button
@@ -118,8 +118,8 @@ export default function ReadingDisplay() {
               Reading Not Found
             </h2>
             <p className="text-lg text-stone-600 mb-6">
-              We couldn't find this reading. It may have been removed or the
-              link is incorrect.
+              We couldn&apos;t find this reading. It may have been removed or
+              the link is incorrect.
             </p>
             <button
               onClick={() => router.push("/")}
