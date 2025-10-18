@@ -16,6 +16,7 @@ export default function TairotAdminDashboard() {
   const [view, setView] = useState("pending");
   const [selectedReading, setSelectedReading] = useState(null);
   const [selectedCards, setSelectedCards] = useState([null, null, null]);
+  const [bottomCard, setBottomCard] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [pendingReadings, setPendingReadings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -262,15 +263,21 @@ export default function TairotAdminDashboard() {
   const handleStartReading = (reading) => {
     setSelectedReading(reading);
     setSelectedCards([null, null, null]);
+    setBottomCard(null);
     setView("card-selection");
   };
 
   const handleGenerateReading = async () => {
+    if (!selectedCards.every((c) => c !== null) || !bottomCard) {
+      alert("Please select all 3 cards AND the bottom of deck card!");
+      return;
+    }
     console.log("Generating reading for:", selectedReading);
     console.log("Selected cards:", selectedCards);
+    console.log("Bottom card:", bottomCard);
 
     try {
-      // First, save the selected cards
+      // First, save the selected cards AND bottom card
       const { data: saveData, error: saveError } = await supabase
         .from("readings")
         .update({
@@ -280,6 +287,13 @@ export default function TairotAdminDashboard() {
             suit: card.suit,
             arcana: card.arcana,
           })),
+          bottom_of_deck: {
+            // ADD THIS
+            id: bottomCard.id,
+            name: bottomCard.name,
+            suit: bottomCard.suit,
+            arcana: bottomCard.arcana,
+          },
           status: "in_progress",
         })
         .eq("id", selectedReading.id)
@@ -324,13 +338,15 @@ export default function TairotAdminDashboard() {
       setView("pending");
       setSelectedReading(null);
       setSelectedCards([null, null, null]);
+      setBottomCard(null);
     } catch (error) {
       console.error("Error generating reading:", error);
       alert(`Oops! Error: ${error.message}\n\nPlease try again.`);
     }
   };
 
-  const allCardsSelected = selectedCards.every((card) => card !== null);
+  const allCardsSelected =
+    selectedCards.every((card) => card !== null) && bottomCard !== null;
 
   const filteredDeck = tarotDeck.filter((card) =>
     card.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -589,6 +605,43 @@ export default function TairotAdminDashboard() {
                 </div>
               ))}
             </div>
+            {/* Bottom of Deck Card */}
+            <div className="mt-8 pt-8 border-t-2 border-stone-100">
+              <h4 className="text-lg font-bold text-indigo-950 mb-3">
+                Bottom of Deck
+              </h4>
+              <p className="text-sm text-stone-600 mb-4">
+                The hidden energy or underlying influence
+              </p>
+              <div className="flex justify-center">
+                <div className="w-48">
+                  <div
+                    className={`h-48 rounded-xl flex items-center justify-center transition ${
+                      bottomCard
+                        ? `bg-gradient-to-br ${
+                            suitColors[bottomCard.suit]
+                          } text-white shadow-lg`
+                        : "bg-stone-100 border-2 border-dashed border-stone-300"
+                    }`}
+                  >
+                    {bottomCard ? (
+                      <div className="text-center px-4">
+                        <p className="font-bold text-lg mb-1">
+                          {bottomCard.name}
+                        </p>
+                        <p className="text-xs opacity-80">
+                          {bottomCard.arcana}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-stone-400 text-sm">
+                        Select bottom card
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Card Deck */}
@@ -612,7 +665,9 @@ export default function TairotAdminDashboard() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-96 overflow-y-auto p-2">
               {filteredDeck.map((card) => {
-                const isSelected = selectedCards.some((c) => c?.id === card.id);
+                const isSelected =
+                  selectedCards.some((c) => c?.id === card.id) ||
+                  bottomCard?.id === card.id;
                 const nextEmptyPosition = selectedCards.findIndex(
                   (c) => c === null
                 );
@@ -620,12 +675,25 @@ export default function TairotAdminDashboard() {
                 return (
                   <button
                     key={card.id}
-                    onClick={() =>
-                      !isSelected &&
-                      nextEmptyPosition !== -1 &&
-                      handleCardSelect(card, nextEmptyPosition)
+                    onClick={() => {
+                      if (isSelected) return;
+
+                      const nextEmptyPosition = selectedCards.findIndex(
+                        (c) => c === null
+                      );
+
+                      // If all 3 positions filled but no bottom card, make it bottom card
+                      if (nextEmptyPosition === -1 && !bottomCard) {
+                        setBottomCard(card);
+                      } else if (nextEmptyPosition !== -1) {
+                        handleCardSelect(card, nextEmptyPosition);
+                      }
+                    }}
+                    disabled={
+                      isSelected ||
+                      (selectedCards.every((c) => c !== null) &&
+                        bottomCard !== null)
                     }
-                    disabled={isSelected || nextEmptyPosition === -1}
                     className={`h-32 rounded-lg flex items-center justify-center text-center p-3 transition ${
                       isSelected
                         ? "bg-stone-200 opacity-50 cursor-not-allowed"
@@ -657,7 +725,7 @@ export default function TairotAdminDashboard() {
             >
               {allCardsSelected
                 ? "Generate AI Reading ✨"
-                : "Select all 3 cards to continue"}
+                : "Select all 3 cards to continue + bottom card to continue"}
             </button>
           </div>
         </div>
