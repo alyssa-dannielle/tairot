@@ -42,14 +42,20 @@ ${cards
   )
   .join("\n")}
 
+**Bottom of Deck (Hidden Influence):**
+- ${reading.bottom_of_deck.name} (${reading.bottom_of_deck.arcana})
+
+The bottom of deck card represents the underlying energy, hidden influence, or subconscious factor at play in this reading.
+
 Please provide a comprehensive reading that:
 1. Interprets each card in its position
-2. Explains how the cards relate to each other
-3. Addresses the querent's specific context and concerns
-4. Offers guidance and insights
-5. Maintains a warm, supportive, and mystical tone
+2. Interprets the bottom of deck card as the hidden or underlying influence
+3. Explains how all the cards (including the bottom card) relate to each other
+4. Addresses the querent's specific context and concerns
+5. Offers guidance and insights that incorporate the hidden influence revealed by the bottom card
+6. Maintains a warm, supportive, and mystical tone
 
-Format the reading with clear sections for each card position, followed by an overall synthesis.`;
+Format the reading with clear sections for each card position, a section for the bottom of deck card, followed by an overall synthesis that weaves everything together.`;
 
     // Call OpenAI
     const completion = await openai.chat.completions.create({
